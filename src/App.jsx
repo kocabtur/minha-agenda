@@ -6,9 +6,9 @@ import EventForm from './components/EventForm';
 import SettingsPanel from './components/SettingsPanel';
 import SyncStatus from './components/SyncStatus';
 import GearIcon from './components/icons/GearIcon';
-import AuthGate from './components/AuthGate';
+import ProfileGate from './components/ProfileGate';
 import { useSchedule } from './hooks/useSchedule';
-import { useAuth } from './hooks/useAuth';
+import { useProfile } from './hooks/useProfile';
 import { durationMinutes } from './utils/time';
 import { WEEKDAYS } from './constants';
 import { supabaseEnabled } from './supabase';
@@ -18,30 +18,21 @@ function todayIndex() {
 }
 
 export default function App() {
-  const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
+  const { profileId, selectProfile, switchProfile } = useProfile();
 
-  if (supabaseEnabled && authLoading) {
-    return (
-      <div className="app-loading">
-        <p>Carregando...</p>
-      </div>
-    );
-  }
-
-  if (supabaseEnabled && !session) {
-    return <AuthGate onSignIn={signInWithEmail} />;
+  if (supabaseEnabled && !profileId) {
+    return <ProfileGate onSelectProfile={selectProfile} />;
   }
 
   return (
     <AgendaApp
-      userId={session?.user?.id ?? null}
-      userEmail={session?.user?.email ?? null}
-      onSignOut={supabaseEnabled ? signOut : null}
+      profileId={profileId}
+      onSwitchProfile={supabaseEnabled ? switchProfile : null}
     />
   );
 }
 
-function AgendaApp({ userId, userEmail, onSignOut }) {
+function AgendaApp({ profileId, onSwitchProfile }) {
   const {
     categories,
     events,
@@ -53,7 +44,7 @@ function AgendaApp({ userId, userEmail, onSignOut }) {
     removeEvent,
     downloadBackup,
     restoreBackup,
-  } = useSchedule(userId);
+  } = useSchedule(profileId);
 
   const [selectedDay, setSelectedDay] = useState(todayIndex);
   const [formOpen, setFormOpen] = useState(false);
@@ -161,12 +152,12 @@ function AgendaApp({ userId, userEmail, onSignOut }) {
       <SettingsPanel
         open={settingsOpen}
         categories={categories}
-        userEmail={userEmail}
+        profileId={profileId}
         onClose={() => setSettingsOpen(false)}
         onRemoveCategory={removeCategory}
         onExport={downloadBackup}
         onImport={restoreBackup}
-        onSignOut={onSignOut}
+        onSwitchProfile={onSwitchProfile}
       />
     </div>
   );

@@ -1,16 +1,17 @@
 -- Execute este script no SQL Editor do seu projeto Supabase (Database > SQL Editor > New query).
 -- Cria as tabelas usadas pelo app "Minha Agenda" para guardar categorias e horários,
--- já com suporte a múltiplos usuários (cada um só vê/edita os próprios dados).
+-- separados por "perfil" (o nome que cada pessoa digita ao abrir o app).
 --
--- Se você já tinha rodado uma versão anterior deste script (sem login), use
--- supabase/enable_auth.sql em vez deste para migrar o banco existente.
+-- Se você já tinha rodado uma versão anterior deste script (sem a coluna
+-- profile_id) e já tem dados reais, use supabase/enable_profiles.sql em vez
+-- deste, para migrar o banco existente sem perder nada.
 
 create table if not exists categories (
   id text primary key,
   name text not null,
   color text not null,
   is_fixed boolean not null default false,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  profile_id text not null,
   created_at timestamptz not null default now()
 );
 
@@ -21,36 +22,28 @@ create table if not exists events (
   start_time text not null,
   end_time text not null,
   days integer[] not null default '{}',
-  user_id uuid not null references auth.users(id) on delete cascade,
+  profile_id text not null,
   created_at timestamptz not null default now()
 );
 
-create index if not exists categories_user_id_idx on categories(user_id);
-create index if not exists events_user_id_idx on events(user_id);
+create index if not exists categories_profile_id_idx on categories(profile_id);
+create index if not exists events_profile_id_idx on events(profile_id);
 
--- Habilita Row Level Security e restringe cada linha ao seu próprio dono
--- (auth.uid() = o usuário autenticado que fez a requisição). Isso é o que
--- garante que cada pessoa só veja e edite a própria agenda, mesmo todo
--- mundo usando o mesmo app e o mesmo projeto Supabase.
+-- Habilita Row Level Security (obrigatório no Supabase para liberar acesso via chave anônima).
 alter table categories enable row level security;
 alter table events enable row level security;
 
+-- IMPORTANTE: este app não usa senha nem verificação real de identidade — cada
+-- pessoa só digita um nome (profile_id), sem confirmação nenhuma. A separação
+-- entre perfis é feita pelo próprio app (ele só consulta e grava filtrando
+-- por esse nome), não pelo banco. Estas políticas liberam leitura/escrita
+-- para qualquer requisição que use a chave "anon" do projeto — ou seja,
+-- alguém com acesso direto à API (fora do app) poderia ler/editar qualquer
+-- profile_id. Para privacidade de verdade (garantida pelo servidor, não só
+-- por convenção), seria necessário adicionar autenticação real (Supabase
+-- Auth) e políticas baseadas em auth.uid().
 drop policy if exists "categories_allow_all" on categories;
-drop policy if exists "categories_select_own" on categories;
-drop policy if exists "categories_insert_own" on categories;
-drop policy if exists "categories_update_own" on categories;
-drop policy if exists "categories_delete_own" on categories;
-create policy "categories_select_own" on categories for select using (auth.uid() = user_id);
-create policy "categories_insert_own" on categories for insert with check (auth.uid() = user_id);
-create policy "categories_update_own" on categories for update using (auth.uid() = user_id);
-create policy "categories_delete_own" on categories for delete using (auth.uid() = user_id);
+create policy "categories_allow_all" on categories for all using (true) with check (true);
 
 drop policy if exists "events_allow_all" on events;
-drop policy if exists "events_select_own" on events;
-drop policy if exists "events_insert_own" on events;
-drop policy if exists "events_update_own" on events;
-drop policy if exists "events_delete_own" on events;
-create policy "events_select_own" on events for select using (auth.uid() = user_id);
-create policy "events_insert_own" on events for insert with check (auth.uid() = user_id);
-create policy "events_update_own" on events for update using (auth.uid() = user_id);
-create policy "events_delete_own" on events for delete using (auth.uid() = user_id);
+create policy "events_allow_all" on events for all using (true) with check (true);

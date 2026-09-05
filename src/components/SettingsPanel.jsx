@@ -4,12 +4,12 @@ import CategoryBadge from './CategoryBadge';
 export default function SettingsPanel({
   open,
   categories,
-  userEmail,
+  profileId,
   onClose,
   onRemoveCategory,
   onExport,
   onImport,
-  onSignOut,
+  onSwitchProfile,
 }) {
   const fileInputRef = useRef(null);
 
@@ -35,13 +35,13 @@ export default function SettingsPanel({
       <div className="modal">
         <h2 className="modal__title">Configurações</h2>
 
-        {onSignOut && (
+        {onSwitchProfile && (
           <section className="settings-section">
-            <h3>Conta</h3>
-            {userEmail && <p className="settings-section__hint">Conectado como {userEmail}.</p>}
+            <h3>Perfil</h3>
+            {profileId && <p className="settings-section__hint">Usando o perfil "{profileId}".</p>}
             <div className="settings-section__actions">
-              <button type="button" className="btn btn--ghost" onClick={onSignOut}>
-                Sair
+              <button type="button" className="btn btn--ghost" onClick={onSwitchProfile}>
+                Trocar de perfil
               </button>
             </div>
           </section>

@@ -22,15 +22,15 @@ export function getDB() {
   return dbPromise;
 }
 
-export async function ensureFixedCategories(userId = null) {
+export async function ensureFixedCategories(profileId = null) {
   const db = await getDB();
   const tx = db.transaction('categories', 'readwrite');
   const existing = await tx.store.getAll();
   const existingIds = new Set(existing.map((c) => c.id));
   for (const category of FIXED_CATEGORIES) {
-    const id = userId ? `${userId}-${category.id}` : category.id;
+    const id = profileId ? `${profileId}-${category.id}` : category.id;
     if (!existingIds.has(id)) {
-      await tx.store.put({ ...category, id, ...(userId ? { user_id: userId } : {}) });
+      await tx.store.put({ ...category, id, ...(profileId ? { profile_id: profileId } : {}) });
     }
   }
   await tx.done;

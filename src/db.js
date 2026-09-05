@@ -13,6 +13,9 @@ export function getDB() {
         if (!db.objectStoreNames.contains('events')) {
           db.createObjectStore('events', { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains('outbox')) {
+          db.createObjectStore('outbox', { keyPath: 'opId', autoIncrement: true });
+        }
       },
     });
   }
@@ -86,6 +89,41 @@ export async function importBackup(data) {
     await tx.objectStore('events').put(event);
   }
   await tx.done;
+}
+
+export async function replaceAllCategories(categories) {
+  const db = await getDB();
+  const tx = db.transaction('categories', 'readwrite');
+  await tx.store.clear();
+  for (const category of categories) {
+    await tx.store.put(category);
+  }
+  await tx.done;
+}
+
+export async function replaceAllEvents(events) {
+  const db = await getDB();
+  const tx = db.transaction('events', 'readwrite');
+  await tx.store.clear();
+  for (const event of events) {
+    await tx.store.put(event);
+  }
+  await tx.done;
+}
+
+export async function queueOutboxOp(table, type, payload) {
+  const db = await getDB();
+  await db.add('outbox', { table, type, payload, queuedAt: Date.now() });
+}
+
+export async function getOutboxOps() {
+  const db = await getDB();
+  return db.getAll('outbox');
+}
+
+export async function clearOutboxOp(opId) {
+  const db = await getDB();
+  return db.delete('outbox', opId);
 }
 
 export async function requestPersistentStorage() {

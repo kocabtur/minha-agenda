@@ -82,6 +82,41 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.sync-status__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #9A9789;
+}
+
+.sync-status--synced .sync-status__dot {
+  background: #2E9E6C;
+}
+
+.sync-status--syncing .sync-status__dot {
+  background: #D6A23B;
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+
+.sync-status--offline .sync-status__dot,
+.sync-status--error .sync-status__dot {
+  background: #C24E4E;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 .icon-button {
   background: var(--surface-muted);
   border: none;

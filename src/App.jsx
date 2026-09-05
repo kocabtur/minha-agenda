@@ -4,6 +4,7 @@ import DayTabs from './components/DayTabs';
 import ScheduleList from './components/ScheduleList';
 import EventForm from './components/EventForm';
 import SettingsPanel from './components/SettingsPanel';
+import SyncStatus from './components/SyncStatus';
 import { useSchedule } from './hooks/useSchedule';
 import { durationMinutes } from './utils/time';
 import { WEEKDAYS } from './constants';
@@ -17,6 +18,7 @@ export default function App() {
     categories,
     events,
     loading,
+    syncState,
     addCategory,
     removeCategory,
     saveEvent,
@@ -82,7 +84,10 @@ export default function App() {
     <div className="app">
       <header className="app__header">
         <div className="app__header-top">
-          <h1 className="app__title">Minha Agenda</h1>
+          <div>
+            <h1 className="app__title">Minha Agenda</h1>
+            <SyncStatus state={syncState} />
+          </div>
           <button
             type="button"
             className="icon-button"

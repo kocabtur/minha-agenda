@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ensureFixedCategories,
   getAllCategories,
@@ -11,6 +11,8 @@ import {
   importBackup,
   requestPersistentStorage,
 } from '../db';
+import { syncOrQueue, syncWithSupabase, mapCategoryToDb, mapEventToDb } from '../sync';
+import { supabaseEnabled } from '../supabase';
 import { CATEGORY_COLOR_PALETTE } from '../constants';
 
 function makeId() {
@@ -21,6 +23,8 @@ export function useSchedule() {
   const [categories, setCategories] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncState, setSyncState] = useState(supabaseEnabled ? 'syncing' : 'disabled');
+  const didInit = useRef(false);
 
   const reload = useCallback(async () => {
     const [cats, evts] = await Promise.all([getAllCategories(), getAllEvents()]);
@@ -28,14 +32,42 @@ export function useSchedule() {
     setEvents(evts);
   }, []);
 
+  const runSync = useCallback(async () => {
+    if (!supabaseEnabled) return;
+    if (!navigator.onLine) {
+      setSyncState('offline');
+      return;
+    }
+    setSyncState('syncing');
+    const result = await syncWithSupabase();
+    if (result.synced) {
+      await reload();
+      setSyncState('synced');
+    } else if (result.reason === 'error') {
+      setSyncState('error');
+    } else {
+      setSyncState('offline');
+    }
+  }, [reload]);
+
   useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
     (async () => {
       await ensureFixedCategories();
       await requestPersistentStorage();
       await reload();
       setLoading(false);
+      await runSync();
     })();
-  }, [reload]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseEnabled) return undefined;
+    window.addEventListener('online', runSync);
+    return () => window.removeEventListener('online', runSync);
+  }, [runSync]);
 
   const addCategory = useCallback(async (name) => {
     const trimmed = name.trim();
@@ -44,24 +76,28 @@ export function useSchedule() {
     const category = { id: makeId(), name: trimmed, color, isFixed: false };
     await putCategory(category);
     await reload();
+    await syncOrQueue('categories', 'upsert', mapCategoryToDb(category));
     return category;
   }, [reload]);
 
   const removeCategory = useCallback(async (id) => {
     await dbDeleteCategory(id);
     await reload();
+    await syncOrQueue('categories', 'delete', { id });
   }, [reload]);
 
   const saveEvent = useCallback(async (event) => {
     const toSave = event.id ? event : { ...event, id: makeId() };
     await putEvent(toSave);
     await reload();
+    await syncOrQueue('events', 'upsert', mapEventToDb(toSave));
     return toSave;
   }, [reload]);
 
   const removeEvent = useCallback(async (id) => {
     await dbDeleteEvent(id);
     await reload();
+    await syncOrQueue('events', 'delete', { id });
   }, [reload]);
 
   const downloadBackup = useCallback(async () => {
@@ -89,6 +125,7 @@ export function useSchedule() {
     categories,
     events,
     loading,
+    syncState,
     addCategory,
     removeCategory,
     saveEvent,

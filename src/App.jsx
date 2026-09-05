@@ -6,15 +6,42 @@ import EventForm from './components/EventForm';
 import SettingsPanel from './components/SettingsPanel';
 import SyncStatus from './components/SyncStatus';
 import GearIcon from './components/icons/GearIcon';
+import AuthGate from './components/AuthGate';
 import { useSchedule } from './hooks/useSchedule';
+import { useAuth } from './hooks/useAuth';
 import { durationMinutes } from './utils/time';
 import { WEEKDAYS } from './constants';
+import { supabaseEnabled } from './supabase';
 
 function todayIndex() {
   return new Date().getDay();
 }
 
 export default function App() {
+  const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
+
+  if (supabaseEnabled && authLoading) {
+    return (
+      <div className="app-loading">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  if (supabaseEnabled && !session) {
+    return <AuthGate onSignIn={signInWithEmail} />;
+  }
+
+  return (
+    <AgendaApp
+      userId={session?.user?.id ?? null}
+      userEmail={session?.user?.email ?? null}
+      onSignOut={supabaseEnabled ? signOut : null}
+    />
+  );
+}
+
+function AgendaApp({ userId, userEmail, onSignOut }) {
   const {
     categories,
     events,
@@ -26,7 +53,7 @@ export default function App() {
     removeEvent,
     downloadBackup,
     restoreBackup,
-  } = useSchedule();
+  } = useSchedule(userId);
 
   const [selectedDay, setSelectedDay] = useState(todayIndex);
   const [formOpen, setFormOpen] = useState(false);
@@ -134,10 +161,12 @@ export default function App() {
       <SettingsPanel
         open={settingsOpen}
         categories={categories}
+        userEmail={userEmail}
         onClose={() => setSettingsOpen(false)}
         onRemoveCategory={removeCategory}
         onExport={downloadBackup}
         onImport={restoreBackup}
+        onSignOut={onSignOut}
       />
     </div>
   );

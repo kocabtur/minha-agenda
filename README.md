@@ -56,9 +56,9 @@ Sem o Supabase configurado, o app funciona normalmente, só que "somente local" 
 
 1. No menu lateral, abra **SQL Editor** → **New query**.
 2. Copie e cole o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) deste repositório.
-3. Clique em **Run**. Isso cria as tabelas `categories` e `events`, com as permissões necessárias para o app funcionar sem login.
+3. Clique em **Run**. Isso cria as tabelas `categories` e `events`, já com Row Level Security configurado para que cada pessoa só veja e edite os próprios dados (veja "Login e uso por várias pessoas" abaixo).
 
-> O script já habilita Row Level Security com uma política que libera leitura/escrita para a chave "anon". Como o app é de uso pessoal e não tem login, isso é necessário para funcionar — mas significa que quem tiver a URL + chave anônima do seu projeto consegue ler/editar esses dados. Não reaproveite essas tabelas para nada sensível sem adicionar autenticação depois.
+> Se você já tinha rodado uma versão anterior deste script (sem login/sem `user_id`) e já tem dados reais salvos, **não rode `schema.sql` de novo** — use [`supabase/enable_auth.sql`](./supabase/enable_auth.sql), que faz a migração preservando o que já existe.
 
 ### 4. Pegar a URL e a chave do projeto
 
@@ -89,17 +89,35 @@ O arquivo `.env.local` não é versionado (já está no `.gitignore`) — cada i
 
 **Limitação conhecida:** se dois aparelhos tiverem dados locais diferentes e **nenhum dos dois** já tiver sincronizado antes, o primeiro a sincronizar "vence" (seus dados vão para o Supabase); o segundo aparelho, ao sincronizar, substitui seu cache local pelo do Supabase. Para evitar isso, configure o Supabase primeiro em um único aparelho (o que já tem os dados que você quer manter) e só depois configure os demais.
 
+## Login e uso por várias pessoas
+
+Com o Supabase configurado, o app pede login por e-mail (link mágico, sem senha) antes de mostrar a agenda. Isso existe para permitir que **várias pessoas usem o mesmo app/link publicado, cada uma com sua própria agenda privada** — ninguém vê ou edita os horários de outra pessoa, mesmo todo mundo acessando a mesma URL e o mesmo projeto Supabase.
+
+Para isso funcionar, faça mais duas configurações no painel do Supabase:
+
+1. **Authentication → Providers**: confirme que **Email** está habilitado (vem habilitado por padrão em projetos novos).
+2. **Authentication → URL Configuration**:
+   - **Site URL**: coloque a URL publicada na Vercel (ex.: `https://minha-agenda-seu-usuario.vercel.app`).
+   - **Redirect URLs**: adicione essa mesma URL e, se for testar localmente, também `http://localhost:5173`.
+
+Sem isso, o link enviado por e-mail pode redirecionar para o lugar errado.
+
+**Para compartilhar com amigos:** basta mandar o link publicado. Cada pessoa entra com o próprio e-mail, recebe o link de acesso, e a partir daí tem sua própria agenda — incluindo as categorias fixas, criadas automaticamente na primeira vez que ela loga.
+
+Para sair da conta (ex.: para testar com outro e-mail no mesmo aparelho), use **Configurações (⚙) → Conta → Sair**. Isso também limpa o cache local do aparelho, para a próxima pessoa a logar não ver nenhum dado da conta anterior.
+
 ## Estrutura do projeto
 
 ```
 src/
-  components/    Componentes de UI (barra de horas, abas de dias, formulário, lista de horários, etc.)
-  hooks/         Hook useSchedule com toda a lógica de estado e persistência
+  components/    Componentes de UI (barra de horas, abas de dias, formulário, lista de horários, tela de login, etc.)
+  hooks/         useSchedule (estado/persistência da agenda) e useAuth (sessão/login do Supabase Auth)
   utils/         Funções auxiliares de cálculo de horário/duração
   constants.js   Categorias fixas, dias da semana, paleta de cores
   db.js          Camada de acesso ao IndexedDB (via idb): cache local, backup/restore e fila de sincronização
   supabase.js    Cliente do Supabase (fica desativado se as variáveis de ambiente não estiverem definidas)
   sync.js        Lógica de sincronização entre o IndexedDB e o Supabase
 supabase/
-  schema.sql     Script para criar as tabelas categories/events no Supabase
+  schema.sql       Script para criar as tabelas categories/events (projeto novo, já com login)
+  enable_auth.sql  Migração para quem já tinha as tabelas sem login/user_id
 ```

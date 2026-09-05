@@ -10,7 +10,7 @@ import {
 } from './db';
 
 function mapCategoryFromDb(row) {
-  return { id: row.id, name: row.name, color: row.color, isFixed: row.is_fixed };
+  return { id: row.id, name: row.name, color: row.color, isFixed: row.is_fixed, user_id: row.user_id };
 }
 
 function mapEventFromDb(row) {
@@ -21,11 +21,18 @@ function mapEventFromDb(row) {
     startTime: row.start_time,
     endTime: row.end_time,
     days: row.days,
+    user_id: row.user_id,
   };
 }
 
 export function mapCategoryToDb(category) {
-  return { id: category.id, name: category.name, color: category.color, is_fixed: !!category.isFixed };
+  return {
+    id: category.id,
+    name: category.name,
+    color: category.color,
+    is_fixed: !!category.isFixed,
+    user_id: category.user_id,
+  };
 }
 
 export function mapEventToDb(event) {
@@ -36,6 +43,7 @@ export function mapEventToDb(event) {
     start_time: event.startTime,
     end_time: event.endTime,
     days: event.days,
+    user_id: event.user_id,
   };
 }
 

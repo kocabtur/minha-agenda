@@ -22,14 +22,15 @@ export function getDB() {
   return dbPromise;
 }
 
-export async function ensureFixedCategories() {
+export async function ensureFixedCategories(userId = null) {
   const db = await getDB();
   const tx = db.transaction('categories', 'readwrite');
   const existing = await tx.store.getAll();
   const existingIds = new Set(existing.map((c) => c.id));
   for (const category of FIXED_CATEGORIES) {
-    if (!existingIds.has(category.id)) {
-      await tx.store.put(category);
+    const id = userId ? `${userId}-${category.id}` : category.id;
+    if (!existingIds.has(id)) {
+      await tx.store.put({ ...category, id, ...(userId ? { user_id: userId } : {}) });
     }
   }
   await tx.done;
@@ -124,6 +125,17 @@ export async function getOutboxOps() {
 export async function clearOutboxOp(opId) {
   const db = await getDB();
   return db.delete('outbox', opId);
+}
+
+export async function clearAllLocalData() {
+  const db = await getDB();
+  const tx = db.transaction(['categories', 'events', 'outbox'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('categories').clear(),
+    tx.objectStore('events').clear(),
+    tx.objectStore('outbox').clear(),
+  ]);
+  await tx.done;
 }
 
 export async function requestPersistentStorage() {

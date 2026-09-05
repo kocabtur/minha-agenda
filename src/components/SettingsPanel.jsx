@@ -4,10 +4,12 @@ import CategoryBadge from './CategoryBadge';
 export default function SettingsPanel({
   open,
   categories,
+  userEmail,
   onClose,
   onRemoveCategory,
   onExport,
   onImport,
+  onSignOut,
 }) {
   const fileInputRef = useRef(null);
 
@@ -32,6 +34,18 @@ export default function SettingsPanel({
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Configurações">
       <div className="modal">
         <h2 className="modal__title">Configurações</h2>
+
+        {onSignOut && (
+          <section className="settings-section">
+            <h3>Conta</h3>
+            {userEmail && <p className="settings-section__hint">Conectado como {userEmail}.</p>}
+            <div className="settings-section__actions">
+              <button type="button" className="btn btn--ghost" onClick={onSignOut}>
+                Sair
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="settings-section">
           <h3>Categorias personalizadas</h3>

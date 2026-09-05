@@ -19,7 +19,7 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function useSchedule() {
+export function useSchedule(userId = null) {
   const [categories, setCategories] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export function useSchedule() {
     if (didInit.current) return;
     didInit.current = true;
     (async () => {
-      await ensureFixedCategories();
+      await ensureFixedCategories(userId);
       await requestPersistentStorage();
       await reload();
       setLoading(false);
@@ -73,12 +73,12 @@ export function useSchedule() {
     const trimmed = name.trim();
     if (!trimmed) return null;
     const color = CATEGORY_COLOR_PALETTE[Math.floor(Math.random() * CATEGORY_COLOR_PALETTE.length)];
-    const category = { id: makeId(), name: trimmed, color, isFixed: false };
+    const category = { id: makeId(), name: trimmed, color, isFixed: false, ...(userId && { user_id: userId }) };
     await putCategory(category);
     await reload();
     await syncOrQueue('categories', 'upsert', mapCategoryToDb(category));
     return category;
-  }, [reload]);
+  }, [reload, userId]);
 
   const removeCategory = useCallback(async (id) => {
     await dbDeleteCategory(id);
@@ -87,12 +87,12 @@ export function useSchedule() {
   }, [reload]);
 
   const saveEvent = useCallback(async (event) => {
-    const toSave = event.id ? event : { ...event, id: makeId() };
+    const toSave = event.id ? event : { ...event, id: makeId(), ...(userId && { user_id: userId }) };
     await putEvent(toSave);
     await reload();
     await syncOrQueue('events', 'upsert', mapEventToDb(toSave));
     return toSave;
-  }, [reload]);
+  }, [reload, userId]);
 
   const removeEvent = useCallback(async (id) => {
     await dbDeleteEvent(id);

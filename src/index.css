@@ -39,6 +39,14 @@ button, input, select {
   font-family: inherit;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 h1, h2, h3 {
   font-family: var(--font-serif);
   font-weight: 600;
@@ -66,8 +74,7 @@ h1, h2, h3 {
 
 .app__header {
   padding: calc(env(safe-area-inset-top, 0px) + 1.25rem) 1.25rem 1rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .app__header-top {
@@ -118,14 +125,35 @@ h1, h2, h3 {
 }
 
 .icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--surface-muted);
   border: none;
   border-radius: 999px;
   width: 2.25rem;
   height: 2.25rem;
-  font-size: 1.1rem;
   cursor: pointer;
+  color: var(--text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.icon-button:hover {
+  background: var(--border);
   color: var(--text);
+}
+
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+/* Battery card */
+.battery-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  padding: 0.95rem 1.1rem;
+  box-shadow: 0 1px 3px rgba(43, 42, 39, 0.06);
 }
 
 /* Battery bar */
@@ -143,7 +171,7 @@ h1, h2, h3 {
 }
 
 .battery__free {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -245,6 +273,14 @@ h1, h2, h3 {
   font-family: var(--font-serif);
 }
 
+.schedule-list__done {
+  margin: 1rem 0 0;
+  padding: 0 0.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .schedule-item {
   display: flex;
   align-items: center;
@@ -253,7 +289,8 @@ h1, h2, h3 {
   border: 1px solid var(--border);
   border-left: 5px solid var(--category-color, #999);
   border-radius: 0.75rem;
-  padding: 0.85rem 1rem;
+  padding: 1.05rem 1.2rem;
+  box-shadow: 0 1px 3px rgba(43, 42, 39, 0.05);
 }
 
 .schedule-item__time {
@@ -302,21 +339,47 @@ h1, h2, h3 {
 .schedule-item__actions {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
-.schedule-item__actions button {
-  border: none;
-  background: var(--surface-muted);
+.schedule-item__action-btn {
+  border: 1px solid var(--border);
+  background: transparent;
   border-radius: 0.5rem;
-  padding: 0.3rem 0.6rem;
+  padding: 0.32rem 0.65rem;
   font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
+  color: var(--text-muted);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.schedule-item__action-btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--accent);
   color: var(--text);
 }
 
-.schedule-item__delete {
+.schedule-item__action-btn:active {
+  transform: translateY(1px);
+}
+
+.schedule-item__action-btn--delete {
   color: var(--danger);
+  border-color: rgba(180, 69, 63, 0.35);
+  background: rgba(180, 69, 63, 0.06);
+}
+
+.schedule-item__action-btn--delete:hover {
+  background: rgba(180, 69, 63, 0.12);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.schedule-item__action-btn--delete:focus-visible {
+  outline-color: var(--danger);
 }
 
 /* Category badge */

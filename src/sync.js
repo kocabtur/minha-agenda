@@ -10,7 +10,7 @@ import {
 } from './db';
 
 function mapCategoryFromDb(row) {
-  return { id: row.id, name: row.name, color: row.color, isFixed: row.is_fixed };
+  return { id: row.id, name: row.name, color: row.color, isFixed: row.is_fixed, profile_id: row.profile_id };
 }
 
 function mapEventFromDb(row) {
@@ -21,11 +21,18 @@ function mapEventFromDb(row) {
     startTime: row.start_time,
     endTime: row.end_time,
     days: row.days,
+    profile_id: row.profile_id,
   };
 }
 
 export function mapCategoryToDb(category) {
-  return { id: category.id, name: category.name, color: category.color, is_fixed: !!category.isFixed };
+  return {
+    id: category.id,
+    name: category.name,
+    color: category.color,
+    is_fixed: !!category.isFixed,
+    profile_id: category.profile_id,
+  };
 }
 
 export function mapEventToDb(event) {
@@ -36,6 +43,7 @@ export function mapEventToDb(event) {
     start_time: event.startTime,
     end_time: event.endTime,
     days: event.days,
+    profile_id: event.profile_id,
   };
 }
 
@@ -67,10 +75,15 @@ async function flushOutbox() {
   }
 }
 
-async function pullFromSupabase() {
+// Como não há autenticação real (login só por nome, sem senha), o filtro por
+// perfil acontece aqui, no cliente — não é imposto pelo banco. Qualquer
+// pessoa com a URL/chave do projeto poderia consultar outro profile_id
+// diretamente pela API, então isso é só uma separação por convenção, não uma
+// garantia de privacidade.
+async function pullFromSupabase(profileId) {
   const [categoriesRes, eventsRes] = await Promise.all([
-    supabase.from('categories').select('*'),
-    supabase.from('events').select('*'),
+    supabase.from('categories').select('*').eq('profile_id', profileId),
+    supabase.from('events').select('*').eq('profile_id', profileId),
   ]);
   if (categoriesRes.error) throw categoriesRes.error;
   if (eventsRes.error) throw eventsRes.error;
@@ -81,27 +94,29 @@ async function pullFromSupabase() {
 }
 
 // Sincroniza com o Supabase: primeiro envia a fila pendente (outbox), depois
-// busca o estado atual do banco e substitui o cache local por ele.
-// Exceção: se o banco remoto ainda estiver vazio (primeira conexão a um
-// projeto novo), envia os dados locais existentes como carga inicial, em vez
-// de sobrescrever o cache local com um banco vazio.
-export async function syncWithSupabase() {
-  if (!supabaseEnabled) return { synced: false, reason: 'disabled' };
+// busca o estado atual do banco (só os dados deste perfil) e substitui o
+// cache local por ele. Exceção: se este perfil ainda não tiver nada salvo no
+// Supabase (primeiro acesso), envia os dados locais existentes como carga
+// inicial, em vez de sobrescrevê-los com um resultado vazio.
+export async function syncWithSupabase(profileId) {
+  if (!supabaseEnabled || !profileId) return { synced: false, reason: 'disabled' };
 
   try {
     await flushOutbox();
 
-    const remote = await pullFromSupabase();
+    const remote = await pullFromSupabase(profileId);
     const remoteHasData = remote.categories.length > 0 || remote.events.length > 0;
 
     if (!remoteHasData) {
       const [localCategories, localEvents] = await Promise.all([getAllCategories(), getAllEvents()]);
-      if (localCategories.length > 0) {
-        const { error } = await supabase.from('categories').upsert(localCategories.map(mapCategoryToDb));
+      const ownCategories = localCategories.filter((c) => c.profile_id === profileId);
+      const ownEvents = localEvents.filter((e) => e.profile_id === profileId);
+      if (ownCategories.length > 0) {
+        const { error } = await supabase.from('categories').upsert(ownCategories.map(mapCategoryToDb));
         if (error) throw error;
       }
-      if (localEvents.length > 0) {
-        const { error } = await supabase.from('events').upsert(localEvents.map(mapEventToDb));
+      if (ownEvents.length > 0) {
+        const { error } = await supabase.from('events').upsert(ownEvents.map(mapEventToDb));
         if (error) throw error;
       }
       return { synced: true, seeded: true };

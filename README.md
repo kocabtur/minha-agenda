@@ -56,9 +56,9 @@ Sem o Supabase configurado, o app funciona normalmente, só que "somente local" 
 
 1. No menu lateral, abra **SQL Editor** → **New query**.
 2. Copie e cole o conteúdo do arquivo [`supabase/schema.sql`](./supabase/schema.sql) deste repositório.
-3. Clique em **Run**. Isso cria as tabelas `categories` e `events`, com as permissões necessárias para o app funcionar sem login.
+3. Clique em **Run**. Isso cria as tabelas `categories` e `events`, já com a coluna `profile_id` usada para separar os dados de cada pessoa (veja "Perfis e uso por várias pessoas" abaixo).
 
-> O script já habilita Row Level Security com uma política que libera leitura/escrita para a chave "anon". Como o app é de uso pessoal e não tem login, isso é necessário para funcionar — mas significa que quem tiver a URL + chave anônima do seu projeto consegue ler/editar esses dados. Não reaproveite essas tabelas para nada sensível sem adicionar autenticação depois.
+> Se você já tinha rodado uma versão anterior deste script (sem a coluna `profile_id`) e já tem dados reais salvos, **não rode `schema.sql` de novo** — use [`supabase/enable_profiles.sql`](./supabase/enable_profiles.sql), que faz a migração preservando o que já existe.
 
 ### 4. Pegar a URL e a chave do projeto
 
@@ -89,17 +89,32 @@ O arquivo `.env.local` não é versionado (já está no `.gitignore`) — cada i
 
 **Limitação conhecida:** se dois aparelhos tiverem dados locais diferentes e **nenhum dos dois** já tiver sincronizado antes, o primeiro a sincronizar "vence" (seus dados vão para o Supabase); o segundo aparelho, ao sincronizar, substitui seu cache local pelo do Supabase. Para evitar isso, configure o Supabase primeiro em um único aparelho (o que já tem os dados que você quer manter) e só depois configure os demais.
 
+## Perfis e uso por várias pessoas
+
+Com o Supabase configurado, o app pede um nome (o "perfil") antes de mostrar a agenda. Isso existe para permitir que **várias pessoas usem o mesmo app/link publicado, cada uma com sua própria agenda** — os horários de cada nome ficam separados dos de outros nomes, mesmo todo mundo acessando a mesma URL e o mesmo projeto Supabase.
+
+**Isso não é um login de verdade — é importante entender a diferença:**
+
+- Não existe senha nem confirmação de identidade. Quem digitar (ou adivinhar) o nome de outra pessoa acessa os horários dela e pode editá-los ou excluí-los.
+- A separação é feita pelo próprio app (ele só busca/grava os dados daquele nome) — alguém com acesso direto à API do Supabase (fora do app) poderia ler ou editar os dados de qualquer perfil, mesmo sem saber o nome certo.
+- Para uma agenda pessoal compartilhada casualmente entre amigos que confiam uns nos outros, isso costuma ser suficiente. Se no futuro você quiser privacidade garantida de verdade (com senha, impossível de adivinhar ou acessar por fora do app), é possível adicionar autenticação real (Supabase Auth) depois — é uma mudança maior, avise se quiser fazer isso.
+
+**Para compartilhar com amigos:** basta mandar o link publicado. Cada pessoa escolhe um nome na tela inicial (combine com elas nomes que só vocês conheçam, se quiser uma separação melhor) e, a partir daí, tem sua própria agenda — incluindo as categorias fixas, criadas automaticamente na primeira vez que aquele nome é usado.
+
+Para trocar de perfil no mesmo aparelho (ex.: para testar com outro nome, ou emprestar o celular para alguém usar o próprio perfil), use **Configurações (⚙) → Perfil → Trocar de perfil**. Isso limpa o cache local do aparelho, para a próxima pessoa não ver os dados do perfil anterior.
+
 ## Estrutura do projeto
 
 ```
 src/
-  components/    Componentes de UI (barra de horas, abas de dias, formulário, lista de horários, etc.)
-  hooks/         Hook useSchedule com toda a lógica de estado e persistência
+  components/    Componentes de UI (barra de horas, abas de dias, formulário, lista de horários, tela de perfil, etc.)
+  hooks/         useSchedule (estado/persistência da agenda) e useProfile (nome do perfil ativo, salvo no aparelho)
   utils/         Funções auxiliares de cálculo de horário/duração
   constants.js   Categorias fixas, dias da semana, paleta de cores
   db.js          Camada de acesso ao IndexedDB (via idb): cache local, backup/restore e fila de sincronização
   supabase.js    Cliente do Supabase (fica desativado se as variáveis de ambiente não estiverem definidas)
   sync.js        Lógica de sincronização entre o IndexedDB e o Supabase
 supabase/
-  schema.sql     Script para criar as tabelas categories/events no Supabase
+  schema.sql           Script para criar as tabelas categories/events (projeto novo, já com profile_id)
+  enable_profiles.sql  Migração para quem já tinha as tabelas sem a coluna profile_id
 ```

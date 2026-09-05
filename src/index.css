@@ -53,6 +53,56 @@ h1, h2, h3 {
   margin: 0;
 }
 
+.auth-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--bg);
+}
+
+.auth-gate__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(43, 42, 39, 0.06);
+  padding: 2rem 1.75rem;
+  max-width: 360px;
+  width: 100%;
+}
+
+.auth-gate__title {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.auth-gate__subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.auth-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-gate__sent {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.auth-gate__hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 1.25rem 0 0;
+}
+
 .app-loading {
   display: flex;
   align-items: center;

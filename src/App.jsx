@@ -6,15 +6,33 @@ import EventForm from './components/EventForm';
 import SettingsPanel from './components/SettingsPanel';
 import SyncStatus from './components/SyncStatus';
 import GearIcon from './components/icons/GearIcon';
+import ProfileGate from './components/ProfileGate';
 import { useSchedule } from './hooks/useSchedule';
+import { useProfile } from './hooks/useProfile';
 import { durationMinutes } from './utils/time';
 import { WEEKDAYS } from './constants';
+import { supabaseEnabled } from './supabase';
 
 function todayIndex() {
   return new Date().getDay();
 }
 
 export default function App() {
+  const { profileId, selectProfile, switchProfile } = useProfile();
+
+  if (supabaseEnabled && !profileId) {
+    return <ProfileGate onSelectProfile={selectProfile} />;
+  }
+
+  return (
+    <AgendaApp
+      profileId={profileId}
+      onSwitchProfile={supabaseEnabled ? switchProfile : null}
+    />
+  );
+}
+
+function AgendaApp({ profileId, onSwitchProfile }) {
   const {
     categories,
     events,
@@ -26,7 +44,7 @@ export default function App() {
     removeEvent,
     downloadBackup,
     restoreBackup,
-  } = useSchedule();
+  } = useSchedule(profileId);
 
   const [selectedDay, setSelectedDay] = useState(todayIndex);
   const [formOpen, setFormOpen] = useState(false);
@@ -134,10 +152,12 @@ export default function App() {
       <SettingsPanel
         open={settingsOpen}
         categories={categories}
+        profileId={profileId}
         onClose={() => setSettingsOpen(false)}
         onRemoveCategory={removeCategory}
         onExport={downloadBackup}
         onImport={restoreBackup}
+        onSwitchProfile={onSwitchProfile}
       />
     </div>
   );

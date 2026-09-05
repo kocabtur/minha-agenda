@@ -23,4 +23,4 @@ export const CATEGORY_COLOR_PALETTE = [
 ];
 
 export const DB_NAME = 'minha-agenda-db';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;

@@ -19,10 +19,20 @@ export default function ScheduleItem({ event, category, onEdit, onDelete }) {
         </div>
       </div>
       <div className="schedule-item__actions">
-        <button type="button" onClick={() => onEdit(event)} aria-label="Editar horário">
+        <button
+          type="button"
+          className="schedule-item__action-btn"
+          onClick={() => onEdit(event)}
+          aria-label="Editar horário"
+        >
           Editar
         </button>
-        <button type="button" className="schedule-item__delete" onClick={() => onDelete(event)} aria-label="Excluir horário">
+        <button
+          type="button"
+          className="schedule-item__action-btn schedule-item__action-btn--delete"
+          onClick={() => onDelete(event)}
+          aria-label="Excluir horário"
+        >
           Excluir
         </button>
       </div>

@@ -9,16 +9,19 @@ export default function ScheduleList({ events, categoriesById, onEdit, onDelete 
   }
 
   return (
-    <ul className="schedule-list">
-      {sorted.map((event) => (
-        <ScheduleItem
-          key={event.id}
-          event={event}
-          category={categoriesById.get(event.categoryId)}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
-    </ul>
+    <>
+      <ul className="schedule-list">
+        {sorted.map((event) => (
+          <ScheduleItem
+            key={event.id}
+            event={event}
+            category={categoriesById.get(event.categoryId)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ))}
+      </ul>
+      <p className="schedule-list__done">Nenhum outro compromisso hoje</p>
+    </>
   );
 }

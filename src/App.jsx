@@ -5,6 +5,7 @@ import ScheduleList from './components/ScheduleList';
 import EventForm from './components/EventForm';
 import SettingsPanel from './components/SettingsPanel';
 import SyncStatus from './components/SyncStatus';
+import GearIcon from './components/icons/GearIcon';
 import { useSchedule } from './hooks/useSchedule';
 import { durationMinutes } from './utils/time';
 import { WEEKDAYS } from './constants';
@@ -94,10 +95,12 @@ export default function App() {
             aria-label="Configurações"
             onClick={() => setSettingsOpen(true)}
           >
-            ⚙
+            <GearIcon />
           </button>
         </div>
-        <BatteryBar usedMinutes={usedMinutes} />
+        <div className="battery-card">
+          <BatteryBar usedMinutes={usedMinutes} />
+        </div>
       </header>
 
       <DayTabs selectedDay={selectedDay} onSelect={setSelectedDay} />
